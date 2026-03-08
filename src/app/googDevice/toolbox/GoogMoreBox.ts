@@ -53,7 +53,7 @@ export class GoogMoreBox {
         const sectionApk = GoogMoreBox.createSection('Install APK', moreBox);
         const apkFileInput = document.createElement('input');
         apkFileInput.type = 'file';
-        apkFileInput.accept = '.apk,application/vnd.android.package-archive';
+        apkFileInput.accept = '.apk';
         apkFileInput.multiple = true;
         apkFileInput.style.display = 'none';
         apkFileInput.id = `apk_file_input_${udid}_${playerName}_${displayId}`;

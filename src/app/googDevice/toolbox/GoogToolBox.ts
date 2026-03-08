@@ -152,11 +152,19 @@ export class GoogToolBox extends ToolBox {
                 }
             }
         });
-        // Sync checkbox when fullscreen changes externally (e.g. Esc key)
-        document.addEventListener('fullscreenchange', () => {
+        // Sync checkbox when fullscreen changes externally (e.g. Esc key).
+        // Uses a self-cleaning handler to avoid memory leaks.
+        let fullscreenHandler: (() => void) | null = null;
+        fullscreenHandler = () => {
             const inputEl = fullscreen.getElement() as HTMLInputElement;
+            if (!inputEl.isConnected) {
+                document.removeEventListener('fullscreenchange', fullscreenHandler!);
+                fullscreenHandler = null;
+                return;
+            }
             inputEl.checked = !!document.fullscreenElement;
-        });
+        };
+        document.addEventListener('fullscreenchange', fullscreenHandler);
         elements.push(fullscreen);
 
         const keyboard = new ToolBoxCheckbox(
