@@ -1,14 +1,122 @@
 .text-area {
     width: 100%;
     resize: vertical;
+    box-sizing: border-box;
+    background-color: var(--main-bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--button-border-color);
+    border-radius: .3rem;
+    padding: .4rem;
+    font-size: var(--font-size);
 }
 
 .more-box {
     display: none;
     position: absolute;
     background-color: var(--controls-bg-color);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: 2;
     padding: 0 .714rem .714rem .714rem;
+    border-radius: .5rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    overflow-y: auto;
+    max-height: 90vh;
+}
+
+.more-box-header {
+    font-size: 1.05em;
+    font-weight: 600;
+    padding: .5rem 0 .2rem;
+    border-bottom: 1px solid var(--button-border-color);
+    margin-bottom: .5rem;
+}
+
+.more-box-section {
+    margin: .6rem 0 .4rem;
+}
+
+.more-box-section-title {
+    font-size: .8em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--text-color-light);
+    margin: 0 0 .35rem;
+    padding: .2rem 0;
+    border-bottom: 1px solid var(--button-border-color);
+}
+
+.more-box-commands {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .3rem;
+    padding: .2rem 0;
+}
+
+.more-box-footer {
+    margin-top: .8rem;
+    padding-top: .6rem;
+    border-top: 1px solid var(--button-border-color);
+    display: flex;
+    gap: .4rem;
+}
+
+.disconnect-btn {
+    color: hsl(342, 100%, 37%);
+    border-color: hsl(342, 100%, 37%);
+    background: transparent;
+}
+.disconnect-btn:hover {
+    background: hsla(342, 100%, 37%, 0.12);
+}
+
+/* APK picker */
+.apk-picker-label {
+    display: inline-block;
+    cursor: pointer;
+    padding: .4rem .8rem;
+    border: 2px dashed var(--button-border-color);
+    border-radius: .4rem;
+    color: var(--button-text-color);
+    background-color: var(--main-bg-color);
+    transition: border-color .2s, background-color .2s;
+    font-size: var(--font-size);
+    margin-bottom: .25rem;
+}
+.apk-picker-label:hover {
+    border-color: var(--link-color);
+    background-color: var(--progress-background-color);
+}
+
+.apk-hint {
+    display: block;
+    color: var(--text-color-light);
+    font-size: .8em;
+    margin-top: .15rem;
+}
+
+/* Keyboard shortcuts table */
+.shortcuts-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .82em;
+}
+.shortcuts-table tr + tr td {
+    border-top: 1px solid var(--button-border-color);
+}
+.shortcuts-table td {
+    padding: .2rem .4rem;
+    vertical-align: middle;
+}
+.shortcut-key {
+    font-family: monospace;
+    background-color: var(--control-buttons-bg-color);
+    border-radius: .25rem;
+    padding: .15rem .4rem;
+    white-space: nowrap;
+    color: var(--button-text-color);
+    font-weight: 600;
 }
 
 .text-with-shadow, .more-box label {
