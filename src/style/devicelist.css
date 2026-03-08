@@ -14,7 +14,6 @@
     }
 }
 
-
 body.list {
     height: auto;
     width: auto;
@@ -98,15 +97,16 @@ body.list #device_list_menu {
 
 #devices .device-state {
     border-radius: 25px;
-    background-color: red;
+    background-color: hsl(0, 70%, 50%);
     font-size: 80%;
     margin-left: 6px;
     width: 1em;
     height: 1em;
+    transition: background-color .25s;
 }
 
 #devices .device.active .device-state {
-    background-color: green;
+    background-color: hsl(142, 71%, 40%);
 }
 
 #devices .device-list {
@@ -124,11 +124,17 @@ body.list #device_list_menu {
 }
 
 #devices .device-list div.device {
-    padding: 5px 20px 5px;
+    padding: 7px 20px 7px;
+    border-bottom: 1px solid var(--device-border-color);
+    transition: background-color .12s;
+}
+
+#devices .device-list div.device:last-child {
+    border-bottom: none;
 }
 
 #devices .device-list div.device:hover {
-    background-color: var(--device-list-hover-color)
+    background-color: var(--device-list-hover-color);
 }
 
 #devices .device-list div.device select {
@@ -155,7 +161,7 @@ body.list #device_list_menu {
 #devices .device-list div.desc-block.server_pid,
 #devices .device-list div.desc-block.net_interface {
     border: 1px solid var(--device-border-color);
-    border-radius: .3em;
+    border-radius: .35em;
     overflow: hidden;
     white-space: nowrap;
 }
@@ -210,6 +216,8 @@ body.list #device_list_menu {
     border: none;
     background-color: rgba(0, 0, 0, 0);
     color: inherit;
+    border-radius: .25rem;
+    transition: background-color .12s;
 }
 
 #devices .device-list div.device div.desc-block .action-button.update-interfaces-button {
@@ -229,7 +237,29 @@ body.list #device_list_menu {
 }
 
 #devices .tracker-name {
-    padding: 5px 20px 5px;
+    padding: 6px 20px;
     font-size: larger;
-    font-weight: bolder;
+    font-weight: 700;
+    letter-spacing: .02em;
+    border-bottom: 2px solid var(--device-border-color);
+    margin-bottom: 4px;
 }
+
+/* Redroid / virtual device badge */
+#devices .device-list .device-tags {
+    display: inline-flex;
+    gap: .3em;
+    margin-left: .4em;
+    vertical-align: middle;
+}
+
+#devices .device-list .device-tag {
+    font-size: .7em;
+    padding: .1em .45em;
+    border-radius: 1em;
+    background-color: var(--progress-background-color);
+    color: var(--button-text-color);
+    font-weight: 600;
+    letter-spacing: .03em;
+}
+

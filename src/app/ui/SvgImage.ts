@@ -15,6 +15,15 @@ import MenuSVG from '../../public/images/buttons/menu.svg';
 import ArrowBackSVG from '../../public/images/buttons/arrow_back.svg';
 import ToggleOnSVG from '../../public/images/buttons/toggle_on.svg';
 import ToggleOffSVG from '../../public/images/buttons/toggle_off.svg';
+import FullscreenSVG from '../../public/images/buttons/fullscreen.svg';
+import FullscreenExitSVG from '../../public/images/buttons/fullscreen_exit.svg';
+import NotificationsSVG from '../../public/images/buttons/notifications.svg';
+import QuickSettingsSVG from '../../public/images/buttons/quick_settings.svg';
+import RotateScreenSVG from '../../public/images/buttons/rotate_screen.svg';
+import LockScreenSVG from '../../public/images/buttons/lock_screen.svg';
+import WakeScreenSVG from '../../public/images/buttons/wake_screen.svg';
+import ApkInstallSVG from '../../public/images/buttons/apk_install.svg';
+import VolumeMuteSVG from '../../public/images/buttons/volume_mute.svg';
 
 export enum Icon {
     BACK,
@@ -34,6 +43,15 @@ export enum Icon {
     ARROW_BACK,
     TOGGLE_ON,
     TOGGLE_OFF,
+    FULLSCREEN,
+    FULLSCREEN_EXIT,
+    NOTIFICATIONS,
+    QUICK_SETTINGS,
+    ROTATE_SCREEN,
+    LOCK_SCREEN,
+    WAKE_SCREEN,
+    APK_INSTALL,
+    VOLUME_MUTE,
 }
 
 export default class SvgImage {
@@ -74,6 +92,24 @@ export default class SvgImage {
                 return ToggleOnSVG;
             case Icon.TOGGLE_OFF:
                 return ToggleOffSVG;
+            case Icon.FULLSCREEN:
+                return FullscreenSVG;
+            case Icon.FULLSCREEN_EXIT:
+                return FullscreenExitSVG;
+            case Icon.NOTIFICATIONS:
+                return NotificationsSVG;
+            case Icon.QUICK_SETTINGS:
+                return QuickSettingsSVG;
+            case Icon.ROTATE_SCREEN:
+                return RotateScreenSVG;
+            case Icon.LOCK_SCREEN:
+                return LockScreenSVG;
+            case Icon.WAKE_SCREEN:
+                return WakeScreenSVG;
+            case Icon.APK_INSTALL:
+                return ApkInstallSVG;
+            case Icon.VOLUME_MUTE:
+                return VolumeMuteSVG;
             default:
                 return '';
         }

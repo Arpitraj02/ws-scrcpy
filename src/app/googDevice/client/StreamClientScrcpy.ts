@@ -390,6 +390,12 @@ export class StreamClientScrcpy
         return new Size(width, height);
     }
 
+    public pushFiles(files: File[]): void {
+        if (this.filePushHandler) {
+            this.filePushHandler.onFilesDrop(files);
+        }
+    }
+
     private setTouchListeners(player: BasePlayer): void {
         if (this.touchHandler) {
             return;

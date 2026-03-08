@@ -28,22 +28,58 @@ export class GoogMoreBox {
         const preferredSettings = player.getPreferredVideoSetting();
         const moreBox = document.createElement('div');
         moreBox.className = 'more-box';
+
+        // Header: device name + player info
         const nameBox = document.createElement('p');
         nameBox.innerText = `${udid} (${playerName})`;
-        nameBox.className = 'text-with-shadow';
+        nameBox.className = 'text-with-shadow more-box-header';
         moreBox.appendChild(nameBox);
+
+        // ── Section: Text input ──────────────────────────────────────────────
+        const sectionText = GoogMoreBox.createSection('Text Input', moreBox);
         const input = (this.input = document.createElement('textarea'));
         input.classList.add('text-area');
+        input.placeholder = 'Type text to send to device…';
         const sendButton = document.createElement('button');
         sendButton.innerText = 'Send as keys';
-
-        const inputWrapper = GoogMoreBox.wrap('p', [input, sendButton], moreBox);
+        const inputWrapper = GoogMoreBox.wrap('div', [input, sendButton], sectionText);
         sendButton.onclick = () => {
             if (input.value) {
                 client.sendMessage(new TextControlMessage(input.value));
             }
         };
 
+        // ── Section: APK / File Install ──────────────────────────────────────
+        const sectionApk = GoogMoreBox.createSection('Install APK', moreBox);
+        const apkFileInput = document.createElement('input');
+        apkFileInput.type = 'file';
+        apkFileInput.accept = '.apk';
+        apkFileInput.multiple = true;
+        apkFileInput.style.display = 'none';
+        apkFileInput.id = `apk_file_input_${udid}_${playerName}_${displayId}`;
+
+        const apkLabel = document.createElement('label');
+        apkLabel.htmlFor = apkFileInput.id;
+        apkLabel.innerText = '📦 Select APK file(s) to install';
+        apkLabel.classList.add('apk-picker-label');
+        apkLabel.title = 'Browse and select APK files to push to device';
+
+        apkFileInput.onchange = () => {
+            if (apkFileInput.files && apkFileInput.files.length > 0) {
+                const files = Array.from(apkFileInput.files);
+                client.pushFiles(files);
+                apkFileInput.value = '';
+            }
+        };
+
+        const apkHint = document.createElement('small');
+        apkHint.innerText = 'You can also drag & drop APK files onto the video stream.';
+        apkHint.className = 'apk-hint';
+
+        GoogMoreBox.wrap('div', [apkFileInput, apkLabel, apkHint], sectionApk);
+
+        // ── Section: Device Commands ─────────────────────────────────────────
+        const sectionCmds = GoogMoreBox.createSection('Device Commands', moreBox);
         const commands: HTMLElement[] = [];
         const codes = CommandControlMessage.Commands;
         for (const [action, command] of codes.entries()) {
@@ -175,8 +211,10 @@ export class GoogMoreBox {
                 };
             }
         }
-        GoogMoreBox.wrap('p', commands, moreBox);
+        GoogMoreBox.wrap('div', commands, sectionCmds, ['more-box-commands']);
 
+        // ── Section: Screen Power ─────────────────────────────────────────────
+        const sectionPower = GoogMoreBox.createSection('Screen Power', moreBox);
         const screenPowerModeId = `screen_power_mode_${udid}_${playerName}_${displayId}`;
         const screenPowerModeLabel = document.createElement('label');
         screenPowerModeLabel.style.display = 'none';
@@ -198,10 +236,12 @@ export class GoogMoreBox {
             const message = CommandControlMessage.createSetScreenPowerModeCommand(screenPowerModeCheck.checked);
             client.sendMessage(message);
         };
-        GoogMoreBox.wrap('p', [screenPowerModeCheck, screenPowerModeLabel, sendScreenPowerModeButton], moreBox, [
+        GoogMoreBox.wrap('div', [screenPowerModeCheck, screenPowerModeLabel, sendScreenPowerModeButton], sectionPower, [
             'flex-center',
         ]);
 
+        // ── Section: Video Quality ────────────────────────────────────────────
+        const sectionQuality = GoogMoreBox.createSection('Display', moreBox);
         const qualityId = `show_video_quality_${udid}_${playerName}_${displayId}`;
         const qualityLabel = document.createElement('label');
         const qualityCheck = document.createElement('input');
@@ -210,11 +250,44 @@ export class GoogMoreBox {
         qualityCheck.id = qualityId;
         qualityLabel.htmlFor = qualityId;
         qualityLabel.innerText = 'Show quality stats';
-        GoogMoreBox.wrap('p', [qualityCheck, qualityLabel], moreBox, ['flex-center']);
+        GoogMoreBox.wrap('div', [qualityCheck, qualityLabel], sectionQuality, ['flex-center']);
         qualityCheck.onchange = () => {
             player.setShowQualityStats(qualityCheck.checked);
         };
 
+        // ── Section: Keyboard shortcuts ───────────────────────────────────────
+        const sectionHelp = GoogMoreBox.createSection('Keyboard Shortcuts', moreBox);
+        const shortcuts = [
+            ['Ctrl+C', 'Copy device clipboard to host'],
+            ['Ctrl+V', 'Paste host clipboard to device'],
+            ['Ctrl+Shift+V', 'Paste host clipboard as key events'],
+            ['Ctrl+I', 'Toggle keyboard capture'],
+            ['Esc / Back', 'Inject Back key'],
+            ['Ctrl+H', 'Inject Home key'],
+            ['Ctrl+App', 'Inject App-Switch key'],
+            ['Ctrl+P', 'Toggle power (screen on/off)'],
+            ['Ctrl+O', 'Turn screen off (keep streaming)'],
+            ['Ctrl+Shift+O', 'Turn screen on'],
+            ['Ctrl+R', 'Rotate device screen'],
+            ['Ctrl+N', 'Expand notification panel'],
+            ['Ctrl+Shift+N', 'Expand settings panel'],
+        ];
+        const table = document.createElement('table');
+        table.className = 'shortcuts-table';
+        shortcuts.forEach(([key, desc]) => {
+            const tr = document.createElement('tr');
+            const tdKey = document.createElement('td');
+            tdKey.className = 'shortcut-key';
+            tdKey.innerText = key;
+            const tdDesc = document.createElement('td');
+            tdDesc.innerText = desc;
+            tr.appendChild(tdKey);
+            tr.appendChild(tdDesc);
+            table.appendChild(tr);
+        });
+        sectionHelp.appendChild(table);
+
+        // ── Footer: Disconnect ────────────────────────────────────────────────
         const stop = (ev?: string | Event) => {
             if (ev && ev instanceof Event && ev.type === 'error') {
                 console.error(TAG, ev);
@@ -232,9 +305,10 @@ export class GoogMoreBox {
 
         const stopBtn = document.createElement('button') as HTMLButtonElement;
         stopBtn.innerText = `Disconnect`;
+        stopBtn.classList.add('disconnect-btn');
         stopBtn.onclick = stop;
 
-        GoogMoreBox.wrap('p', [stopBtn], moreBox);
+        GoogMoreBox.wrap('div', [stopBtn], moreBox, ['more-box-footer']);
         player.on('video-view-resize', this.onViewVideoResize);
         player.on('video-settings', this.onVideoSettings);
         this.holder = moreBox;
@@ -305,6 +379,17 @@ export class GoogMoreBox {
         });
         parent.appendChild(wrap);
         return wrap;
+    }
+
+    private static createSection(title: string, parent: HTMLElement): HTMLElement {
+        const section = document.createElement('div');
+        section.className = 'more-box-section';
+        const heading = document.createElement('h4');
+        heading.className = 'more-box-section-title';
+        heading.innerText = title;
+        section.appendChild(heading);
+        parent.appendChild(section);
+        return section;
     }
 
     public getHolderElement(): HTMLElement {

@@ -1,227 +1,340 @@
-# ws scrcpy
+# ws-scrcpy
 
-Web client for [Genymobile/scrcpy][scrcpy] and more.
+> **Browser-based Android screen mirror, remote control & device management.**  
+> Control your Android device (and [Redroid](https://github.com/remote-android/redroid-doc) virtual devices) from any modern web browser — no plugins, no installs on the client side.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Supported Devices](#supported-devices)
+  - [Android / Physical Device](#android--physical-device)
+  - [Redroid Virtual Device](#redroid-virtual-device)
+  - [iOS (Experimental)](#ios-experimental)
+- [Controls & Keyboard Shortcuts](#controls--keyboard-shortcuts)
+- [New in This Fork](#new-in-this-fork)
+- [Architecture](#architecture)
+- [Troubleshooting](#troubleshooting)
+- [Credits](#credits)
+- [License](#license)
+
+---
+
+## Features
+
+### Screen Streaming
+- **H264 video streaming** from device to browser over WebSocket
+- Multiple decoder backends:
+  - **MSE Player** — HTML5 `<video>` + Media Source Extensions (hardware acceleration possible)
+  - **Broadway Player** — WebAssembly software decoder
+  - **TinyH264 Player** — Improved WASM decoder with WebGL rendering
+  - **WebCodecs Player** — Browser-native hardware/software codec (Chromium-based browsers)
+
+### Remote Control
+- Touch events including **multi-touch**
+- Multi-touch emulation: hold <kbd>Ctrl</kbd> for symmetric touch from center; hold <kbd>Shift</kbd>+<kbd>Ctrl</kbd> to set the center at the cursor
+- Mouse wheel and touchpad **horizontal/vertical scrolling**
+- Full **keyboard capture and injection**
+- **Text injection** via textarea
+- **Clipboard sync** — copy from/to device clipboard
+- Device **rotation control**
+
+### New Features (This Fork)
+- 🔊 **Volume Mute** button in toolbar
+- 🔔 **Expand notifications panel** button in toolbar
+- ⚙️ **Expand quick settings** button in toolbar
+- 🔄 **Rotate screen** button in toolbar
+- 🌙 **Wake / lock screen** quick-action buttons in toolbar
+- 🔒 **Lock screen** (screen power OFF) button in toolbar
+- ⛶ **Fullscreen toggle** with browser Fullscreen API support
+- 📦 **APK file picker** — click a button to browse and select APK files to install (no drag-and-drop required)
+- 📋 **Keyboard shortcuts reference** panel inside the More menu
+- 🎨 **Improved UI** — modern card layout, smooth hover/active animations, rounded corners, backdrop blur
+- 🍞 **Toast notification system** — non-intrusive success/error/info messages
+- 🏷️ **Device state badge** — green/red indicator with smooth transition
+- 🌗 **Dark mode** — respects `prefers-color-scheme`, fully themed
+- 🏁 **Improved page title & meta** for better browser tab readability
+- **Section-organized More menu** — Text Input, APK Install, Device Commands, Screen Power, Display, Keyboard Shortcuts
+- Better error messages and graceful error handling throughout
+
+### File Management
+- **Drag & drop** APK file installation
+- **File picker** APK installation (new)
+- File push to `/data/local/tmp`
+- Push progress indicator on screen
+
+### Remote Shell
+- **`adb shell`** in your browser via xterm.js
+- PTY support via node-pty
+
+### WebView / DevTools Debugging
+- Debug Chrome/WebView content running on the device
+- Full DevTools integration
+
+---
 
 ## Requirements
 
-Browser must support the following technologies:
-* WebSockets
-* Media Source Extensions and h264 decoding;
-* WebWorkers
-* WebAssembly
+**Browser:**
+- WebSockets
+- Media Source Extensions + H264 decoding *or* WebAssembly
+- WebWorkers
+- (Optional) WebCodecs API (Chromium 94+)
 
-Server:
-* Node.js v10+
-* node-gyp ([installation](https://github.com/nodejs/node-gyp#installation))
-* `adb` executable must be available in the PATH environment variable
+**Server:**
+- Node.js v14+
+- `node-gyp` and build tools ([installation guide](https://github.com/nodejs/node-gyp#installation))
+- `adb` executable in `PATH`
 
-Device:
-* Android 5.0+ (API 21+)
-* Enabled [adb debugging](https://developer.android.com/studio/command-line/adb.html#Enabling)
-* On some devices, you also need to enable
-[an additional option](https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323)
-to control it using keyboard and mouse.
+**Device:**
+- Android 5.0+ (API 21+)
+- [USB debugging enabled](https://developer.android.com/studio/command-line/adb.html#Enabling)
+- On some devices, an [additional option](https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323) to allow control via keyboard/mouse may be required
 
-## Build and Start
+---
 
-Make sure you have installed [node.js](https://nodejs.org/en/download/),
-[node-gyp](https://github.com/nodejs/node-gyp) and
-[build tools](https://github.com/nodejs/node-gyp#installation)
-```shell
-git clone https://github.com/NetrisTV/ws-scrcpy.git
+## Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/Arpitraj02/ws-scrcpy.git
 cd ws-scrcpy
 
-## For stable version find latest tag and switch to it:
-# git tag -l
-# git checkout vX.Y.Z
-
+# Install dependencies
 npm install
+
+# Build and start (production)
 npm start
 ```
 
-## Supported features
+Then open your browser at **http://localhost:8000** (or the port shown in the terminal).
 
-### Android
+For development with auto-rebuild:
+```bash
+npm run dist:dev
+cd dist && npm start
+```
 
-#### Screen casting
-The modified [version][fork] of [Genymobile/scrcpy][scrcpy] used to stream
-H264-video, which then decoded by one of included decoders:
+---
 
-##### Mse Player
+## Configuration
 
-Based on [xevokk/h264-converter][xevokk/h264-converter].
-HTML5 Video.<br>
-Requires [Media Source API][MSE] and `video/mp4; codecs="avc1.42E01E"`
-[support][isTypeSupported]. Creates mp4 containers from NALU, received from a
-device, then feeds them to [MediaSource][MediaSource]. In theory, it can use
-hardware acceleration.
+Copy the example config and edit it:
 
-##### Broadway Player
+```bash
+cp config.example.yaml config.yaml
+```
 
-Based on [mbebenita/Broadway][broadway] and
-[131/h264-live-player][h264-live-player].<br>
-Software video-decoder compiled into wasm-module.
-Requires [WebAssembly][wasm] and preferably [WebGL][webgl] support.
+Key options in `config.yaml`:
 
-##### TinyH264 Player
+```yaml
+server:
+  - port: 8000          # HTTP port
+    # secure: true       # Enable HTTPS
+    # certPath: ./cert.pem
+    # keyPath: ./key.pem
 
-Based on [udevbe/tinyh264][tinyh264].<br>
-Software video-decoder compiled into wasm-module. A slightly updated version of
-[mbebenita/Broadway][broadway].
-Requires [WebAssembly][wasm], [WebWorkers][workers], [WebGL][webgl] support.
+# Optional: connect to a remote ADB host
+# remoteHostList:
+#   - hostname: 192.168.1.100
+#     port: 5037
+```
 
-##### WebCodecs Player
+### Custom Build Flags
 
-Decoding is done by browser built-in (software/hardware) media decoder.
-Requires [WebCodecs][webcodecs] support. At the moment, available only in
-[Chromium](https://www.chromestatus.com/feature/5669293909868544) and derivatives.
+Edit `build.config.override.json` (or set environment variables) to toggle features:
 
-#### Remote control
-* Touch events (including multi-touch)
-* Multi-touch emulation: <kbd>CTRL</kbd> to start with center at the center of
-the screen, <kbd>SHIFT</kbd> + <kbd>CTRL</kbd> to start with center at the
-current point
-* Mouse wheel and touchpad vertical/horizontal scrolling
-* Capturing keyboard events
-* Injecting text (ASCII only)
-* Copy to/from device clipboard
-* Device "rotation"
+| Flag | Default | Description |
+|------|---------|-------------|
+| `INCLUDE_GOOG` | `true` | Android device support |
+| `INCLUDE_APPL` | `false` | iOS device support (experimental) |
+| `INCLUDE_ADB_SHELL` | `true` | Remote shell terminal |
+| `INCLUDE_DEV_TOOLS` | `true` | WebView/DevTools debugging |
+| `INCLUDE_FILE_LISTING` | `true` | File manager |
+| `USE_BROADWAY` | `true` | Broadway WASM decoder |
+| `USE_H264_CONVERTER` | `true` | MSE Player (H264→MP4) |
+| `USE_TINY_H264` | `true` | TinyH264 WASM decoder |
+| `USE_WEBCODECS` | `true` | WebCodecs decoder |
 
-#### File push
-Drag & drop an APK file to push it to the `/data/local/tmp` directory. You can
-install it manually from the included [xtermjs/xterm.js][xterm.js] terminal
-emulator (see below).
+---
 
-#### Remote shell
-Control your device from `adb shell` in your browser.
+## Supported Devices
 
-#### Debug WebPages/WebView
-[/docs/Devtools.md](/docs/Devtools.md)
+### Android / Physical Device
 
-#### File listing
-* List files
-* Upload files by drag & drop
-* Download files
+1. Enable **USB Debugging** on the device
+2. Connect via USB (or via `adb connect <ip>:<port>` for WiFi)
+3. Open the web UI and click the device name
 
-### iOS
+### Redroid Virtual Device
 
-***Experimental Feature***: *is not built by default*
-(see [custom build](#custom-build))
+[Redroid](https://github.com/remote-android/redroid-doc) is a multi-instance, GPU-accelerated Android-in-Docker container. ws-scrcpy works seamlessly with Redroid:
 
-#### Screen Casting
+1. Start a Redroid container:
+   ```bash
+   docker run -itd --rm --privileged \
+     --name redroid \
+     -v ~/data:/data \
+     -p 5555:5555 \
+     redroid/redroid:12.0.0-latest
+   ```
+2. Connect ADB to the container:
+   ```bash
+   adb connect localhost:5555
+   ```
+3. Open ws-scrcpy — the virtual device will appear in the device list automatically.
 
-Requires [ws-qvh][ws-qvh] available in `PATH`.
+> **Tip:** Redroid supports hardware video encoding on compatible GPUs, giving best streaming performance.
 
-#### MJPEG Server
+### iOS (Experimental)
 
-Enable `USE_WDA_MJPEG_SERVER` in the build configuration file
-(see [custom build](#custom-build)).
+iOS support requires additional setup. Set `INCLUDE_APPL=true` in your build config. See [docs/Devtools.md](docs/Devtools.md) for details.
 
-Alternative way to stream screen content. It does not
-require additional software as `ws-qvh`, but may require more resources as each
-frame encoded as jpeg image.
+---
 
-#### Remote control
+## Controls & Keyboard Shortcuts
 
-To control device we use [appium/WebDriverAgent][WebDriverAgent].
-Functionality limited to:
-* Simple touch
-* Scroll
-* Home button click
+| Shortcut | Action |
+|----------|--------|
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy device clipboard to host |
+| <kbd>Ctrl</kbd>+<kbd>V</kbd> | Paste host clipboard to device |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> | Paste as key events |
+| <kbd>Ctrl</kbd>+<kbd>I</kbd> | Toggle keyboard capture |
+| <kbd>Esc</kbd> / Back | Inject Back key |
+| <kbd>Ctrl</kbd>+<kbd>H</kbd> | Inject Home key |
+| <kbd>Ctrl</kbd>+<kbd>App</kbd> | Inject App-Switch (Overview) key |
+| <kbd>Ctrl</kbd>+<kbd>P</kbd> | Toggle power (screen on/off) |
+| <kbd>Ctrl</kbd>+<kbd>O</kbd> | Turn screen off (keep streaming) |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>O</kbd> | Turn screen on |
+| <kbd>Ctrl</kbd>+<kbd>R</kbd> | Rotate device screen |
+| <kbd>Ctrl</kbd>+<kbd>N</kbd> | Expand notification panel |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd> | Expand settings panel |
 
-Make sure you did properly [setup WebDriverAgent](https://appium.io/docs/en/drivers/ios-xcuitest-real-devices/).
-WebDriverAgent project is located under `node_modules/appium-webdriveragent/`.
+**Toolbar buttons** (right sidebar while streaming):
+- **More (≡)** — toggle the settings panel
+- **Power** — send power key
+- **Volume Up / Down** — media volume
+- **Back / Home / Overview** — navigation keys
+- **Mute** — volume mute
+- **Notifications** — expand notification panel
+- **Quick Settings** — expand quick settings
+- **Rotate** — rotate device orientation
+- **Wake/Lock** — send back-or-screen-on key
+- **Lock** — set screen power OFF
+- **Screenshot** — capture and download PNG
+- **Fullscreen** — enter browser fullscreen (press Esc to exit)
+- **Capture Keyboard** — toggle keyboard event capture
 
-You might want to enable `AssistiveTouch` on your device: `Settings/General/Accessibility`.
+---
 
-## Custom Build
+## New in This Fork
 
-You can customize project before build by overriding the
-[default configuration](/webpack/default.build.config.json) in
-[build.config.override.json](/build.config.override.json):
-* `INCLUDE_APPL` - include code for iOS device tracking and control
-* `INCLUDE_GOOG` - include code for Android device tracking and control
-* `INCLUDE_ADB_SHELL` - [remote shell](#remote-shell) for android devices
-([xtermjs/xterm.js][xterm.js], [Tyriar/node-pty][node-pty])
-* `INCLUDE_DEV_TOOLS` - [dev tools](#debug-webpageswebview) for web pages and
-web views on android devices
-* `INCLUDE_FILE_LISTING` - minimalistic [file management](#file-listing)
-* `USE_BROADWAY` - include [Broadway Player](#broadway-player)
-* `USE_H264_CONVERTER` - include [Mse Player](#mse-player)
-* `USE_TINY_H264` - include [TinyH264 Player](#tinyh264-player)
-* `USE_WEBCODECS` - include [WebCodecs Player](#webcodecs-player)
-* `USE_WDA_MJPEG_SERVER` - configure WebDriverAgent to start MJPEG server
-* `USE_QVH_SERVER` - include support for [ws-qvh][ws-qvh]
-* `SCRCPY_LISTENS_ON_ALL_INTERFACES` - WebSocket server in `scrcpy-server.jar`
-will listen for connections on all available interfaces. When `true`, it allows
-connecting to device directly from a browser. Otherwise, the connection must be
-established over adb.
+This repository ([Arpitraj02/ws-scrcpy](https://github.com/Arpitraj02/ws-scrcpy)) is a fork of the excellent [NetrisTV/ws-scrcpy](https://github.com/NetrisTV/ws-scrcpy) by [Sergey Volkov](https://github.com/NetrisTV), with the following additions and improvements:
 
-## Run configuration
+### Added Features
+1. **APK file picker** — install APK via file browser dialog (no drag-and-drop needed)
+2. **Fullscreen mode** — browser fullscreen via Fullscreen API with toolbar toggle and Esc support
+3. **Mute button** — one-click volume mute in toolbar
+4. **Expand notifications** — quick access in toolbar
+5. **Expand quick settings** — quick access in toolbar
+6. **Rotate screen** — quick rotate button in toolbar
+7. **Wake/lock screen** — dedicated wake (back-or-screen-on) button
+8. **Lock screen** — set screen power OFF from toolbar
+9. **Organized More panel** — sections: Text Input, APK Install, Device Commands, Screen Power, Display, Keyboard Shortcuts
+10. **Keyboard shortcuts reference** — displayed in the More panel
+11. **Toast notifications** — animated non-blocking status messages
+12. **Connection status badge** — visual connected/disconnected indicator
+13. **Improved button hover/active states** — smooth transitions and scale animation
+14. **Backdrop blur on panels** — glassmorphism control panel effect
+15. **Device list improvements** — row borders, smooth hover, better status dot colors
+16. **Section headers in MoreBox** — clearly labeled control sections
+17. **APK drag-and-drop hint** — helper text in APK install section
+18. **APK file type filter** — file picker pre-filtered to `.apk` files
+19. **Dark mode improvements** — better shadow and blur in dark theme
+20. **Updated page title & meta** — descriptive browser tab title and description meta
+21. **Redroid compatibility notes** — documented in README
+22. **Improved CSS architecture** — CSS custom properties for toast and shadow tokens
 
-You can specify a path to a configuration file in `WS_SCRCPY_CONFIG`
-environment variable.
+---
 
-If you want to have another pathname than "/" you can specify it in the
-`WS_SCRCPY_PATHNAME` environment variable.
+## Architecture
 
-Configuration file format: [Configuration.d.ts](/src/types/Configuration.d.ts).
+```
+ws-scrcpy/
+├── src/
+│   ├── app/          # Frontend (TypeScript, no framework, plain DOM)
+│   │   ├── googDevice/     # Android device UI & logic
+│   │   ├── applDevice/     # iOS device UI & logic
+│   │   ├── player/         # Video decoder backends
+│   │   ├── interactionHandler/  # Touch/mouse/keyboard input
+│   │   └── ui/             # Shared UI utilities
+│   ├── server/       # Node.js backend (Express + WebSocket)
+│   └── common/       # Shared types and constants
+├── vendor/           # Bundled third-party libraries
+├── webpack/          # Build configuration
+└── dist/             # Build output (generated)
+```
 
-Configuration file example: [config.example.yaml](/config.example.yaml).
+**Video pipeline:** Device → scrcpy server (modified) → ADB → Node.js proxy → WebSocket → Browser decoder → Canvas/Video element
 
-## Known issues
+---
 
-* The server on the Android Emulator listens on the internal interface and not
-available from the outside. Select `proxy over adb` from the interfaces list.
-* TinyH264Player may fail to start, try to reload the page.
-* MsePlayer reports too many dropped frames in quality statistics: needs
-further investigation.
-* On Safari file upload does not show progress (it works in one piece).
+## Troubleshooting
 
-## Security warning
-Be advised and keep in mind:
-* There is no encryption between browser and node.js server (you can [configure](#run-configuration) HTTPS).
-* There is no encryption between browser and WebSocket server on android device.
-* There is no authorization on any level.
-* The modified version of scrcpy with integrated WebSocket server is listening
-for connections on all network interfaces (see [custom build](#custom-build)).
-* The modified version of scrcpy will keep running after the last client
-disconnected.
+**Device not showing up:**
+- Check `adb devices` — device must be listed as `device` (not `unauthorized`)
+- Restart the ADB server: `adb kill-server && adb start-server`
 
-## Related projects
-* [Genymobile/scrcpy][scrcpy]
-* [xevokk/h264-converter][xevokk/h264-converter]
-* [131/h264-live-player][h264-live-player]
-* [mbebenita/Broadway][broadway]
-* [DeviceFarmer/adbkit][adbkit]
-* [xtermjs/xterm.js][xterm.js]
-* [udevbe/tinyh264][tinyh264]
-* [danielpaulus/quicktime_video_hack][qvh]
+**Black screen / no video:**
+- Try a different player (MSE → Broadway → TinyH264 → WebCodecs)
+- Reduce bitrate or resolution in the More panel → Video Settings
+- Check browser console for errors
 
-## scrcpy websocket fork
+**APK install fails:**
+- Make sure the APK is not corrupted
+- Verify the device has enough free storage
+- Check the `adb shell` terminal for detailed error messages
 
-Currently, support of WebSocket protocol added to v1.19 of scrcpy
-* [Prebuilt package](/vendor/Genymobile/scrcpy/scrcpy-server.jar)
-* [Source code][fork]
+**Redroid connection issues:**
+- Confirm the container is running: `docker ps`
+- Verify ADB is connected: `adb devices`
+- Check firewall rules if running remotely
 
-[fork]: https://github.com/NetrisTV/scrcpy/tree/feature/websocket-v1.19.x
+**HTTPS required for fullscreen / clipboard:**
+- Some browser APIs require a secure context (HTTPS or localhost)
+- Configure `secure: true` with a certificate in `config.yaml`
 
-[scrcpy]: https://github.com/Genymobile/scrcpy
-[xevokk/h264-converter]: https://github.com/xevokk/h264-converter
-[h264-live-player]: https://github.com/131/h264-live-player
-[broadway]: https://github.com/mbebenita/Broadway
-[adbkit]: https://github.com/DeviceFarmer/adbkit
-[xterm.js]: https://github.com/xtermjs/xterm.js
-[tinyh264]: https://github.com/udevbe/tinyh264
-[node-pty]: https://github.com/Tyriar/node-pty
-[WebDriverAgent]: https://github.com/appium/WebDriverAgent
-[qvh]: https://github.com/danielpaulus/quicktime_video_hack
-[ws-qvh]: https://github.com/NetrisTV/ws-qvh
+---
 
-[MSE]: https://developer.mozilla.org/en-US/docs/Web/API/Media_Source_Extensions_API
-[isTypeSupported]: https://developer.mozilla.org/en-US/docs/Web/API/MediaSource/isTypeSupported
-[MediaSource]: https://developer.mozilla.org/en-US/docs/Web/API/MediaSource
-[wasm]: https://developer.mozilla.org/en-US/docs/WebAssembly
-[webgl]: https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API
-[workers]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API
-[webcodecs]: https://w3c.github.io/webcodecs/
+## Credits
+
+| Role | Contributor |
+|------|-------------|
+| **Original author** | [Sergey Volkov (NetrisTV)](https://github.com/NetrisTV) |
+| **Fork maintainer** | [Arpitraj02](https://github.com/Arpitraj02) |
+| **scrcpy** | [Genymobile/scrcpy](https://github.com/Genymobile/scrcpy) |
+| **Modified scrcpy** | [NetrisTV fork](https://github.com/NetrisTV/scrcpy) |
+| **H264 converter** | [xevokk/h264-converter](https://github.com/xevokk/h264-converter) |
+| **Broadway decoder** | [mbebenita/Broadway](https://github.com/mbebenita/Broadway) |
+| **H264 live player** | [131/h264-live-player](https://github.com/131/h264-live-player) |
+| **TinyH264** | [udevbe/tinyh264](https://github.com/udevbe/tinyh264) |
+| **xterm.js** | [xtermjs/xterm.js](https://github.com/xtermjs/xterm.js) |
+| **adbkit** | [@dead50f7/adbkit](https://github.com/dead50f7/adbkit) |
+| **Redroid** | [remote-android/redroid-doc](https://github.com/remote-android/redroid-doc) |
+
+---
+
+## License
+
+[MIT](LICENSE) — see the LICENSE file for details.
+
+> Original project © Sergey Volkov  
+> Fork improvements © Arpitraj02
+
+
